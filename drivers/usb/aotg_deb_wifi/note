@@ -1,0 +1,6 @@
+
+this taken from sparky Linux git
+-in this changed 30/10/17 patch with the print statement comment
+-added check condition on aotg_hcd.c to correct URB error , also commented the -43 error print line
+- some of the patch shows problem with wifi - to be identified
+0019 ,0020,0021 , 0013 ,0015 from last git bkp 

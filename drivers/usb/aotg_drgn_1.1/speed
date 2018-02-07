@@ -1,0 +1,110 @@
+aotg_core.c:417:	if (aotg_mode[pdev->id] == HCD_MODE)
+aotg_core.c:418:		aotg_power_onoff(pdev->id,1);
+aotg_core.c:422:		dev_err(&pdev->dev, "<HCD_PROBE>usb has no resource for mem!\n");
+aotg_core.c:430:		dev_err(&pdev->dev, "<AOTG_PROBE>usb has no resource for irq!\n");
+aotg_core.c:435:	if (!request_mem_region(res_mem->start, res_mem->end - res_mem->start + 1, dev_name(&pdev->dev))) {
+aotg_core.c:436:		dev_err(&pdev->dev, "<AOTG_PROBE>request_mem_region failed\n");
+aotg_core.c:443:		dev_err(&pdev->dev, "<AOTG_PROBE>ioremap failed\n");
+aotg_core.c:448:	if (aotg_mode[pdev->id] == HCD_MODE) {
+aotg_core.c:449:		hcd = usb_create_hcd(&act_hc_driver, &pdev->dev, dev_name(&pdev->dev));
+aotg_core.c:451:			dev_err(&pdev->dev, "<HCD_PROBE>usb create hcd failed\n");
+aotg_core.c:461:			dev_err(&pdev->dev, "<HCD_PROBE>hcd init failed\n");
+aotg_core.c:467:		act_hcd_ptr[pdev->id] = acthcd;
+aotg_core.c:468:		acthcd->dev = &pdev->dev;
+aotg_core.c:472:		acthcd->id = pdev->id;
+aotg_core.c:473:		dev_info(&pdev->dev, "pdev->id probe:%d\n", pdev->id);
+aotg_core.c:474:		aotg_hardware_init(pdev->id);
+aotg_core.c:502:			dev_info(&pdev->dev, "hcd controller initialized. OTGIRQ: 0x%02X, OTGSTATE: 0x%02X \n", 
+aotg_core.c:517:		//aotg_power_onoff(pdev->id, 0);
+aotg_core.c:519:		udc->port_specific = pdev->dev.platform_data;
+aotg_core.c:522:		udc->dev =  &pdev->dev;
+aotg_core.c:526:		udc->id = pdev->id;
+aotg_core.c:530:		aotg_hardware_init(pdev->id);
+aotg_core.c:538:		retval = usb_add_gadget_udc(&pdev->dev, &udc->gadget);
+aotg_core.c:547:	aotg_clk_enable(pdev->id, 0);
+aotg_core.c:548:	owl_powergate_power_off(pdev->id ? OWL_POWERGATE_USB2_1 : OWL_POWERGATE_USB2_0);
+aotg_core.c:553:	dev_err(&pdev->dev, "%s: usb probe hcd  failed, error is %d", __func__, retval);
+aotg_core.c:689:		dev_err(&pdev->dev, "<HCD_PROBE>usb has no resource for mem!\n");
+aotg_core.c:697:		dev_err(&pdev->dev, "<AOTG_PROBE>usb has no resource for irq!\n");
+aotg_core.c:702:	if (!request_mem_region(res_mem->start, res_mem->end - res_mem->start + 1, dev_name(&pdev->dev))) {
+aotg_core.c:703:		dev_err(&pdev->dev, "<AOTG_PROBE>request_mem_region failed\n");
+aotg_core.c:710:		dev_err(&pdev->dev, "<AOTG_PROBE>ioremap failed\n");
+aotg_core.c:716:	udc->port_specific = pdev->dev.platform_data;
+aotg_core.c:719:	udc->dev =  &pdev->dev;
+aotg_core.c:721:	udc->id = pdev->id;
+aotg_core.c:726:	aotg_hardware_init(pdev->id);
+aotg_core.c:742:	dev_err(&pdev->dev, "%s: usb probe hcd  failed, error is %d", __func__, retval);
+aotg_hcd.c:228:		mutex_unlock(&(udev->dev).mutex);
+aotg_hcd.c:498:		if (urb->dev->speed == USB_SPEED_HIGH) {
+aotg_hcd.c:500:			writeb(urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:501:			 printk("SPEED3 is %d \n",urb->dev->speed);
+aotg_hcd.c:504:			if (urb->dev->speed == USB_SPEED_LOW) {
+aotg_hcd.c:505:				writeb(0x80 | urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:506:				printk("SPEED3_1 is %d \n",urb->dev->speed);
+aotg_hcd.c:508:				writeb(urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:509:				printk("SPEED3_2 is %d \n",urb->dev->speed);
+aotg_hcd.c:515:		writeb(urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:1506:	port_no = pdev->id & 0xff;
+aotg_hcd.c:1733:		port_no = pdev->id & 0xff;
+aotg_hcd.c:1922:		if (urb->dev->speed == USB_SPEED_HIGH) {
+aotg_hcd.c:1924:			writeb(urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:1925:			 printk("SPEED0 is %d \n",urb->dev->speed);
+aotg_hcd.c:1927:		//	printk("SPEED is %d \n",urb->dev->speed);
+aotg_hcd.c:1929:			if (urb->dev->speed == USB_SPEED_LOW) {
+aotg_hcd.c:1930:				writeb(0x80 | urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:1931:				printk("SPEED_1 is %d \n",urb->dev->speed);
+aotg_hcd.c:1933:				writeb(urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:1934:				printk("SPEED_2 is %d dev-port %d hcep %d\n",urb->dev->speed,urb->dev->portnum,ep->reg_hcep_port);
+aotg_hcd.c:1940:		writeb(urb->dev->portnum, ep->reg_hcep_port);
+aotg_hcd.c:1941:		printk("SPEED1 is %d \n",urb->dev->speed);
+aotg_hcd.c:2028:	if (urb->dev->parent) {
+aotg_hcd.c:2029:		if (urb->dev->tt) {
+aotg_hcd.c:2031:			think_time = (urb->dev->tt->think_time / 666);
+aotg_hcd.c:2041:			//printk("urb->dev->tt->hub:%p \n", urb->dev->tt->hub);
+aotg_hcd.c:2044:		if ((urb->dev->parent->parent) && (urb->dev->parent != hcd->self.root_hub)) {
+aotg_hcd.c:2136:	if ((ep->udev->speed != USB_SPEED_HIGH) && ep->has_hub && (type == PIPE_INTERRUPT)) {
+aotg_hcd.c:2138:		printk("SPEED2 is %d \n",urb->dev->speed);	
+aotg_hcd.c:2592:			hcd = bus_to_hcd(urb->dev->bus);
+aotg_hcd.c:2693:			hcd = bus_to_hcd(urb->dev->bus);
+aotg_hcd.c:2857:	//struct aotg_plat_data *data = dev->platform_data;
+aotg_hcd.c:2876:	//struct aotg_plat_data *data = dev->platform_data;
+aotg_hcd.c:3093:	//acthcd->dev = &pdev->dev;
+aotg_hcd.c:3094:	acthcd->port_specific = pdev->dev.platform_data;
+aotg_hcd.c:3218:	act_hcd_ptr[pdev->id] = NULL;
+aotg_hcd.c:3272:	printk(KERN_DEBUG "pdev->id remove:%d\n", pdev->id);
+aotg_hcd.c:3275:	if (!port_host_plug_detect[pdev->id])
+aotg_hcd.c:3276:		aotg_power_onoff(pdev->id,0);
+aotg_hcd.c:3303:	aotg_power_onoff(pdev->id,0);
+aotg_hcd.c:3326:	//gpio_set_value_cansleep(vbus_otg_en_gpio[pdev->id][0], 1);
+aotg_hcd.c:3327:	aotg_power_onoff(pdev->id,1);
+aotg_hcd.c:3368:	//gpio_set_value_cansleep(vbus_otg_en_gpio[pdev->id][0], 0);
+aotg_hcd.c:3369:	aotg_power_onoff(pdev->id,0);
+aotg_ring.c:1331:	usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
+aotg_ring.c:1333:	usb_hcd_giveback_urb(bus_to_hcd(urb->dev->bus), urb, status);
+aotg_ring.c:1378:	usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
+aotg_ring.c:1380:	usb_hcd_giveback_urb(bus_to_hcd(urb->dev->bus), urb, status);
+aotg_ring.c:1443:	usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
+aotg_ring.c:1445:	usb_hcd_giveback_urb(bus_to_hcd(urb->dev->bus), urb, status);
+aotg_udc.c:1083:	ep->dev->stats.irqs++;
+aotg_udc.c:1135:	spin_unlock(&ep->dev->lock);
+aotg_udc.c:1137:	spin_lock(&ep->dev->lock);
+aotg_udc.c:1561:				ep->dev->stats.read.bytes++;
+aotg_udc.c:1580:	ep->dev->stats.write.bytes += count;
+aotg_udc.c:1646:	dev->ep0state = EP0_WAIT_FOR_SETUP;
+aotg_udc.c:1647:	dev->stats.irqs = 0;
+aotg_udc.c:1648:	dev->state = UDC_IDLE;
+aotg_udc.c:1649:	dev->gadget.dev.parent->power.power_state = PMSG_ON;
+aotg_udc.c:1650:	dev->gadget.dev.power.power_state = PMSG_ON;
+aotg_udc.c:1669:	dev->ep0state = EP0_WAIT_FOR_SETUP;
+aotg_udc.c:1670:	dev->gadget.speed = USB_SPEED_UNKNOWN;
+aotg_udc.c:1672:	dev->state = UDC_DISABLE;
+aotg_udc.c:1867:	INIT_LIST_HEAD(&dev->gadget.ep_list);
+aotg_udc.c:1868:	INIT_LIST_HEAD(&dev->gadget.ep0->ep_list);
+aotg_udc.c:1870:	dev->ep0state = EP0_WAIT_FOR_SETUP;
+aotg_udc.c:1871:	dev->gadget.speed = USB_SPEED_UNKNOWN;
+aotg_udc.c:1873:	dev->state = UDC_UNKNOWN;
+aotg_udc.c:1874:	memset(&dev->stats, 0, sizeof(struct udc_stats));
+aotg_udc.c:1878:		struct aotg_ep *ep = &dev->ep[i];
+aotg_udc.c:1881:			list_add_tail(&ep->ep.ep_list, &dev->gadget.ep_list);
+aotg_udc.c:2171:	aotg_clk_enable(pdev->id, 0);
+aotg_udc.c:2174:	owl_powergate_power_off(pdev->id == 0 ? OWL_POWERGATE_USB2_0 : OWL_POWERGATE_USB2_1);

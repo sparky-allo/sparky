@@ -1,0 +1,42 @@
+diff --git a/drivers/usb/aotg/aotg_hcd.c b/drivers/usb/aotg/aotg_hcd.c
+index 2d2c62a..0c87fb9 100755
+--- a/drivers/usb/aotg/aotg_hcd.c
++++ b/drivers/usb/aotg/aotg_hcd.c
+@@ -2319,8 +2319,8 @@ static int aotg_hub_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, unsigned m
+ 		}
+ 
+ 		if (!list_empty(&ep->enring_td_list) && !is_ring_running(ep->ring)) {
+-			if (ep->ring->dequeue_trb != ep->ring->first_trb)  /* patch 0018 */
+-				aotg_reorder_iso_td(acthcd, ep->ring);
++			//if (ep->ring->dequeue_trb != ep->ring->first_trb)  /* patch 0018 */
++				//aotg_reorder_iso_td(acthcd, ep->ring);
+ 			aotg_start_ring_transfer(acthcd, ep, urb);
+ 		}
+ 	}
+diff --git a/drivers/usb/aotg/aotg_ring.c b/drivers/usb/aotg/aotg_ring.c
+index 2d7db67..ba1b19c 100755
+--- a/drivers/usb/aotg/aotg_ring.c
++++ b/drivers/usb/aotg/aotg_ring.c
+@@ -327,7 +327,8 @@ void aotg_start_ring(struct aotg_ring *ring, u32 addr)
+ {
+ 	struct aotg_trb *temp_trb = ring->dequeue_trb;
+ 	int i;
+-	if ((ring->type == PIPE_BULK) && ((temp_trb->hw_token & TRB_OF)== 0)) {
++	if ((ring->type == PIPE_BULK || ring->type == PIPE_ISOCHRONOUS) &&
++		((temp_trb->hw_token & TRB_OF) == 0)) {
+ 		for (i=0; i< NUM_TRBS; i++) {
+ 			if (temp_trb->hw_token == 0xaa) { /*deal dequeue urb*/
+ 				inc_dequeue_safe(ring);
+@@ -741,6 +742,12 @@ void aotg_reorder_iso_td(struct aotg_hcd *acthcd, struct aotg_ring *ring) {
+ 			td->trb_vaddr = ring->enqueue_trb;
+ 			td->trb_dma = ring_trb_virt_to_dma(ring, ring->enqueue_trb);
+ 			for (i = 0; i < td->num_trbs; i++) {
++				if (i == (td->num_trbs - 1)) {
++					if (ring->is_out)
++						trb->hw_token |= TRB_ITE;
++					else
++						trb->hw_token |= TRB_ICE;
++				}
+ 				enqueue_trb(ring, trb->hw_buf_ptr, trb->hw_buf_len, trb->hw_token &(~TRB_COF));
+ 			}
+ 		}

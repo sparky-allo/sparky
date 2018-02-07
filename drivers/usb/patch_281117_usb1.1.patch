@@ -1,0 +1,24 @@
+diff -Naur aotg/aotg_core.c aotg_git_91117p/aotg_core.c
+--- aotg/aotg_core.c	2017-11-28 18:24:07.530624203 +0530
++++ aotg_git_91117p/aotg_core.c	2016-11-29 12:06:52.143149204 +0530
+@@ -84,10 +84,6 @@
+ module_param(aotg1_tx_bias, int, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(aotg1_tx_bias, "aotg1_tx_bias");
+ 
+-static int aotg1_speed = 0;
+-module_param(aotg1_speed, int, S_IRUGO | S_IWUSR);
+-MODULE_PARM_DESC(aotg1_speed, "aotg1_speed default 0 high speed , 1 full speed");
+-
+ struct aotg_udc *acts_udc_controller;
+ unsigned int port_device_enable[2];
+ int vbus_otg_en_gpio[2][2];
+@@ -239,9 +235,6 @@
+ 
+ 	if (id)
+ 		data = &aotg_data1;
+-		if (aotg1_speed){
+-                        data->no_hs=1;
+-                }
+ 	else
+ 		data = &aotg_data0;
+ 	usb_clearbitsl(data->devrst_bits, data->devrst);
