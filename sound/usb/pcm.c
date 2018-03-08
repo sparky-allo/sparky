@@ -339,6 +339,9 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 	/* set interface */
 	if (subs->interface != fmt->iface ||
 	    subs->altset_idx != fmt->altset_idx) {
+		 err = snd_usb_select_mode_quirk(subs, fmt);
+                if (err < 0)
+                        return -EIO;
 		err = usb_set_interface(dev, fmt->iface, fmt->altsetting);
 		if (err < 0) {
 			snd_printk(KERN_ERR "%d:%d:%d: usb_set_interface failed (%d)\n",
@@ -390,6 +393,28 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 
 			if (!iface || iface->num_altsetting == 0)
 				return -EINVAL;
+
+			alts = &iface->altsetting[1];
+			goto add_sync_ep;
+		}
+	case USB_ID(0x2466, 0x8003):
+		if (is_playback) {
+			ep = 0x86;
+			iface = usb_ifnum_to_if(dev, 2);
+
+			if (!iface || iface->num_altsetting == 0)
+			return -EINVAL;
+
+			alts = &iface->altsetting[1];
+			goto add_sync_ep;
+		}
+	case USB_ID(0x1397, 0x0002):
+		if (is_playback) {
+			ep = 0x81;
+			iface = usb_ifnum_to_if(dev, 1);
+
+			if (!iface || iface->num_altsetting == 0)
+			return -EINVAL;
 
 			alts = &iface->altsetting[1];
 			goto add_sync_ep;

@@ -869,6 +869,83 @@ void snd_usb_set_format_quirk(struct snd_usb_substream *subs,
 		break;
 	}
 }
+/* Marantz/Denon USB DACs need a vendor cmd to switch
+ *  * between PCM and native DSD mode
+ *   */
+static bool is_marantz_denon_dac(unsigned int id)
+{
+        switch (id) {
+        case USB_ID(0x154e, 0x1003): /* Denon DA-300USB */
+        case USB_ID(0x154e, 0x3005): /* Marantz HD-DAC1 */
+        case USB_ID(0x154e, 0x3006): /* Marantz SA-14S1 */
+                return true;
+        }
+        return false;
+}
+
+/* TEAC UD-501/UD-503/NT-503 USB DACs need a vendor cmd to switch
+ *  * between PCM/DOP and native DSD mode
+ *   */
+static bool is_teac_dsd_dac(unsigned int id)
+{
+        switch (id) {
+        case USB_ID(0x0644, 0x8043): /* TEAC UD-501/UD-503/NT-503 */
+        case USB_ID(0x0644, 0x8044): /* Esoteric D-05X */
+                return true;
+        }
+        return false;
+}
+int snd_usb_select_mode_quirk(struct snd_usb_substream *subs,
+                              struct audioformat *fmt)
+{
+        struct usb_device *dev = subs->dev;
+        int err;
+
+        if (is_marantz_denon_dac(subs->stream->chip->usb_id)) {
+                /* First switch to alt set 0, otherwise the mode switch cmd
+ *                  * will not be accepted by the DAC
+ *                                   */
+                err = usb_set_interface(dev, fmt->iface, 0);
+                if (err < 0)
+                        return err;
+
+                mdelay(20); /* Delay needed after setting the interface */
+
+                switch (fmt->altsetting) {
+                case 2: /* DSD mode requested */
+                case 1: /* PCM mode requested */
+                        err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), 0,
+                                              USB_DIR_OUT|USB_TYPE_VENDOR|USB_RECIP_INTERFACE,
+                                              fmt->altsetting - 1, 1, NULL, 0);
+                        if (err < 0)
+                                return err;
+                        break;
+                }
+                mdelay(20);
+	 } else if (is_teac_dsd_dac(subs->stream->chip->usb_id)) {
+                /* Vendor mode switch cmd is required. */
+                switch (fmt->altsetting) {
+                case 3: /* DSD mode (DSD_U32) requested */
+                        err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), 0,
+                                              USB_DIR_OUT|USB_TYPE_VENDOR|USB_RECIP_INTERFACE,
+                                              1, 1, NULL, 0);
+                        if (err < 0)
+                                return err;
+                        break;
+
+                case 2: /* PCM or DOP mode (S32) requested */
+                case 1: /* PCM mode (S16) requested */
+                        err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), 0,
+                                              USB_DIR_OUT|USB_TYPE_VENDOR|USB_RECIP_INTERFACE,
+                                              0, 1, NULL, 0);
+                        if (err < 0)
+                                return err;
+                        break;
+                }
+        }
+        return 0;
+}
+
 
 void snd_usb_endpoint_start_quirk(struct snd_usb_endpoint *ep)
 {
@@ -941,6 +1018,11 @@ void snd_usb_ctl_msg_quirk(struct usb_device *dev, unsigned int pipe,
 			   __u8 request, __u8 requesttype, __u16 value,
 			   __u16 index, void *data, __u16 size)
 {
+	struct snd_usb_audio *chip = dev_get_drvdata(&dev->dev);
+
+	if (!chip)
+                return;
+
 	/*
 	 * "Playback Design" products need a 20ms delay after each
 	 * class compliant request
@@ -948,6 +1030,30 @@ void snd_usb_ctl_msg_quirk(struct usb_device *dev, unsigned int pipe,
 	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x23ba) &&
 	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
 		mdelay(20);
+	/*
+           * "TEAC Corp." products need a 20ms delay after each
+	    * class compliant request
+                             */
+        if (USB_ID_VENDOR(chip->usb_id) == 0x0644 &&
+            (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
+                mdelay(20);
+
+        /* Marantz/Denon devices with USB DAC functionality need a delay
+           * after each class compliant request
+                    */
+        if (is_marantz_denon_dac(chip->usb_id)
+            && (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
+                mdelay(20);
+
+        /* Zoom R16/24, Logitech H650e, Jabra 550a needs a tiny delay here,
+           * otherwise requests like get/set frequency return as failed despite
+                    * actually succeeding.
+                             */
+        if ((chip->usb_id == USB_ID(0x1686, 0x00dd) ||
+             chip->usb_id == USB_ID(0x046d, 0x0a46) ||
+             chip->usb_id == USB_ID(0x0b0e, 0x0349)) &&
+            (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
+                mdelay(1);
 }
 
 /*
@@ -989,12 +1095,9 @@ u64 snd_usb_interface_dsd_format_quirks(struct snd_usb_audio *chip,
 	case USB_ID(0x22d9, 0x0416): /* OPPO HA-1 */
 	case USB_ID(0x2772, 0x0230): /* Pro-Ject Pre Box S2 Digital */
 	case USB_ID(0x2522, 0x0012): /* LH Labs VI DAC Infinity */
-	case USB_ID(0x1511, 0x0037): /* AURALiC VEGA */
-	case USB_ID(0x20b1, 0x0002): /* Wyred 4 Sound DAC-2 DSD */
 	case USB_ID(0x2622, 0x0666): /* QUAD Artera */
 	case USB_ID(0x22d9, 0x0436): /* OPPO Sonica */
 	case USB_ID(0x22d9, 0x0461): /* OPPO UDP-205 */
-	case USB_ID(0x2522, 0x0012): /* LH Labs VI DAC Infinity */
 	case USB_ID(0x25ce, 0x001f): /* Mytek Brooklyn DAC */  
 
 		if (fp->altsetting == 2)
@@ -1033,24 +1136,41 @@ u64 snd_usb_interface_dsd_format_quirks(struct snd_usb_audio *chip,
 		break;
 
 	/* Amanero Combo384 USB interface with native DSD support */
-	case USB_ID(0x16d0, 0x071a):
+	case USB_ID(0x16d0, 0x071a):  /* Amanero - Combo384 */
+	case USB_ID(0x2ab6, 0x0004):  /* T+A DAC8DSD-V2.0, MP1000E-V2.0, MP2000R-V2.0, MP2500R-V2.0, MP3100HV-V2.0 */
+  	case USB_ID(0x2ab6, 0x0005):  /* T+A USB HD Audio 1 */
+   	case USB_ID(0x2ab6, 0x0006):  /* T+A USB HD Audio 2 */
 		if (fp->altsetting == 2) {
 		//	switch (chip->dev->descriptor.bcdDevice) {
 			switch (le16_to_cpu(chip->dev->descriptor.bcdDevice)) {
 			case 0x199:
 				return SNDRV_PCM_FMTBIT_DSD_U32_LE;   
 			case 0x19b:
+			case 0x203:
 				return SNDRV_PCM_FMTBIT_DSD_U32_BE;
 			default:
 				break;
 			}
 		}
                 break;
-
+	case USB_ID(0x16d0, 0x0a23):
+		if (fp->altsetting == 2)
+			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
+		break;
 
 	default:
 		break;
 	}
+	 /* Denon/Marantz devices with USB DAC functionality */
+        if (is_marantz_denon_dac(chip->usb_id)) {
+                if (fp->altsetting == 2)
+                        return SNDRV_PCM_FMTBIT_DSD_U32_BE;
+        }
 
+        /* TEAC devices with USB DAC functionality */
+        if (is_teac_dsd_dac(chip->usb_id)) {
+                if (fp->altsetting == 3)
+                        return SNDRV_PCM_FMTBIT_DSD_U32_BE;
+        }
 	return 0;
 }
