@@ -240,8 +240,10 @@ dtb-$(CONFIG_ARCH_OWL) += actduino_bubble_gum.dtb \
 	actduino_bubble_gum_sdboot_linux.dtb \
 	actduino_s500_lcd_1280x800_linux.dtb \
 	actduino_sparky_linux.dtb \
+	actduino_sparky_linux_1024x600.dtb \
 	actduino_s500_lcd_1280x800_sdboot_linux.dtb \
 	actduino_sparky_sdboot_linux.dtb \
+	actduino_sparky_sdboot_linux_1024x600.dtb \
 	actduino_sparky_linux_720p.dtb \
 	actduino_s500_lcd_768x1024_linux.dtb \
 	actduino_lemaker_guitar_linux.dtb \

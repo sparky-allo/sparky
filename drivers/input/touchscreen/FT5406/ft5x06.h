@@ -1,7 +1,7 @@
 #ifndef FT5X06_H
 #define FT5X06_H
 #include "ft5x06_reg.h"
-
+#define GPIO_TO_IRQ 1   //added by sudeep
 #define CFG_FT_USE_CONFIG  1
 
 #define FT5X06_X_MAX            ( 1280 )
@@ -30,7 +30,9 @@
 #define FT5X06_POWER_MIN_VOL	(3100000)
 #define FT5X06_POWER_MAX_VOL	(3110000)
 
-#define FT5X06_RESET_PIN        OWL_GPIO_PORTB(3)
+#define FT5X06_RESET_PIN        OWL_GPIO_PORTB(26) // B(3)
+#define FT5X06_LED_PIN        OWL_GPIO_PORTD(18) 
+
 #define I2C_CTPM_ADDRESS 0x38
 //#define FT5X0X_DOWNLOAD_FIRM    (R_TP_DOWNLOAD_FIRM)
 //#define FIRM_I_FILE_NAME	(R_TP_I_FILE_NAME)
@@ -107,7 +109,8 @@ typedef unsigned char         FTS_BOOL;    //8 bit
 
 //#define GPIO_TO_IRQ
 #ifdef GPIO_TO_IRQ
-#define FT5X06_IRQ_GPIO        OWL_GPIO_PORTA(24)
+//#define FT5X06_IRQ_GPIO        OWL_GPIO_PORTA(24)
+#define FT5X06_IRQ_GPIO        OWL_GPIO_PORTB(24) // for sparky
 #define FT5x06_IRQ_NAME        "ft5x06_irq"
 #endif
 

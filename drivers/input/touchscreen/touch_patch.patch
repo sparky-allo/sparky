@@ -1,0 +1,393 @@
+diff -Naur orig_FT5406/ft5x06.c FT5406/ft5x06.c
+--- orig_FT5406/ft5x06.c	2016-11-29 12:06:48.643149193 +0530
++++ FT5406/ft5x06.c	2017-05-19 16:27:14.101733545 +0530
+@@ -22,6 +22,7 @@
+ #include <linux/of_irq.h>
+ #include "ft5x06_reg.h"
+ #include "ft5x06.h"
++#include <mach/hardware.h>
+ 
+ #define FT5X06_NAME             "ft5x06"
+ #define VALUE_XY(h, l)          ( (h & 0x0f) << 8 | l)
+@@ -365,7 +366,7 @@
+     unsigned char uc_temp;
+     unsigned char i ;
+ 
+-    printk("[FTS] start auto CLB.\n");
++    //printk("[FTS] start auto CLB.\n");
+     msleep(200);
+     ft5x0x_write_reg(client,0, 0x40);  
+     delay_qt_ms(100);   //make sure already enter factory mode
+@@ -589,10 +590,11 @@
+     uc_host_fm_ver = fts_ctpm_get_i_file_ver();
+ 	
+     printk("[FTS]uc_tp_fm_ver=%x uc_host_fm_ver=%x\n",uc_tp_fm_ver,uc_host_fm_ver);
+-
++#if 0
+     if ( uc_tp_fm_ver == 0xa6  ||   //the firmware in touch panel maybe corrupted
+          uc_tp_fm_ver < uc_host_fm_ver //the firmware in host flash is new, need upgrade
+         )
++#endif
+ 
+     {
+         msleep(100);
+@@ -1166,12 +1168,7 @@
+     }
+     //printk(KERN_ERR"number:%d\n", number);
+     if ( number ) {
+-        for ( i = 1, cnt = 0; cnt < number; i += POINT_DATA_LEN, cnt++ ) {
+-#if 0
+-#ifdef CONFIG_GL5201_AT716
+-					int tmp;
+-#endif
+-#endif            
++        for ( i = 1, cnt = 0; cnt < number; i += POINT_DATA_LEN, cnt++ ) {           
+             type = VALUE_TYPE(data->rawData[i]);
+             if ( NONE_EVENT == type )
+                 continue;
+@@ -1180,14 +1177,6 @@
+                                         data->rawData[i+ FT5X06_X_OFFSET + 1]);
+             y = VALUE_XY( data->rawData[i + FT5X06_Y_OFFSET], 
+                                         data->rawData[i + FT5X06_Y_OFFSET + 1]);
+-#if 0
+-#ifdef CONFIG_GL5201_AT716           
+-								tmp = x;
+-								x = y;
+-								//y= 480 - tmp;
+-								y = tmp;
+-#endif
+-#endif
+     //printk("raw:x:%d, y:%d\n", x, y);
+ #if CFG_FT_USE_CONFIG
+             if ( x <= cfg_dts.xMax && y <= cfg_dts.yMax ) {
+@@ -1209,20 +1198,20 @@
+                     y = cfg_dts.yMax - y;
+                 }
+                 
+-                if(cfg_dts.rotate == 90){//anticlockwise 90 angle
+-                    int tmp;
+-                    tmp = x;
+-                    x = y;
+-                    y = cfg_dts.xMax - tmp;
+-                }else if(cfg_dts.rotate == 180){//anticlockwise 180 angle
+-        	        x = cfg_dts.xMax - x;
+-		            y = cfg_dts.yMax - y;
+-                }else if(cfg_dts.rotate == 270){//anticlockwise 270 angle
+-        	        int tmp;
+-		            tmp = x;
+-		            x = cfg_dts.yMax-y;
+-		            y = tmp;
+-                } 
++                //if(cfg_dts.rotate == 90){//anticlockwise 90 angle
++                //    int tmp;
++                //    tmp = x;
++                //    x = y;
++                //    y = cfg_dts.xMax - tmp;
++                //}else if(cfg_dts.rotate == 180){//anticlockwise 180 angle
++        	//        x = cfg_dts.xMax - x;
++	        //        y = cfg_dts.yMax - y;
++                //}else if(cfg_dts.rotate == 270){//anticlockwise 270 angle
++        	//        int tmp;
++		//            tmp = x;
++		//            x = cfg_dts.yMax-y;
++		//            y = tmp;
++                //} 
+ 
+             }
+ #endif
+@@ -1308,52 +1297,48 @@
+ #ifdef PROTOCOL_B
+ static int ft5x06_report_b(struct ft5x06_device *ftdev)
+ {
+-    int i = 0;
+-    int  ts_press = 0;
+-	static int  ts_release = 0;
+-    struct ft5x06_data *data = ftdev->ftdata;
+-    struct input_dev *input = ftdev->input_dev;
++		int i = 0;
++		int  ts_press = 0;
++		static int  ts_release = 0;
++		struct ft5x06_data *data = ftdev->ftdata;
++		struct input_dev *input = ftdev->input_dev;
++		struct ft5x06_point*pos = &data->points[i];
+ 
+     if( !ftdev || !ftdev->ftdata )
+         return -EFAULT;
+- //   printk("b: validPointCnt is %d\n",data->validPointCnt);
+- //   if ( data->validPointCnt ){
+-	    for ( i = 0; i < data->validPointCnt; i++ ) 
++		if ( data->validPointCnt == 0 )
+ 		{
+-		 // printk("!!!%d  x %d y %d--type %d\n",data->points[i].id,data->points[i].x,data->points[i].y,data->points[i].type);
+-		  //if(data->points[i].type != RELEASE_EVENT){
+-		  //  printk("id is  %d\n",data->points[i].id);
+-		input_mt_slot(input, data->points[i].id);
+-		input_mt_report_slot_state(input, MT_TOOL_FINGER, true);
+-	
+-		input_report_abs(input, ABS_MT_TOUCH_MAJOR, 1);
+-		input_report_abs(input, ABS_MT_POSITION_X, data->points[i].x);
+-		input_report_abs(input, ABS_MT_POSITION_Y, data->points[i].y);
+-		input_report_abs(input, ABS_MT_PRESSURE,100);
+-        //printk("x y %d--%d",current_events[index].x,current_events[index].y);
+-        ts_press |= 0x01 << data->points[i].id;
+-       // printk("ts_press is %d id is %d\n",ts_press,data->points[i].id );
+-		//}
+-//		else{
+-//		// printk("!!!!!!!!!!!!release %d \n",data->points[i].id);
+-//		input_mt_slot(input, data->points[i].id);
+-//		input_mt_report_slot_state(input, MT_TOOL_FINGER, false);
+-//		    }
+-       
++                        input_report_abs(input, ABS_PRESSURE, 0);
++                        input_report_key(input, BTN_TOUCH, 0);
++                        input_sync(input);
++		}	
++		//* Modify by Hayden.Hu -- begin
++		//for ( i = 0; i < data->validPointCnt; i++ ) 
++		else
++		{
++			if ( pos )
++			{
++				switch( pos->type ) {
++					case PRESS_EVENT:
++					case CONTACT_EVENT:
++						input_report_abs(input, ABS_X, data->points[i].x);
++						input_report_abs(input, ABS_Y, data->points[i].y);
++						input_report_abs(input, ABS_PRESSURE, 1);
++						input_report_key(input, BTN_TOUCH, 1);
++						input_sync(input);
++						break;
++					case RELEASE_EVENT:
++						input_report_abs(input, ABS_PRESSURE, 0);
++						input_report_key(input, BTN_TOUCH, 0);
++						input_sync(input);
++						break;
++					default :
++						printk( "ft5x06_report_b ohoh\n" );
++				}
++			}
+ 		}
+-        ts_release &= ts_release ^ ts_press;
+-   // }else{
+-   // printk("%x tp_release  %x\n",ts_press,ts_release);
+-	for ( i = 0; i < FT5X06_MAX_POINT; i++ ) {
+-		if ( ts_release & (0x01<<i) ) {	
+-		 //   printk("release %d",i);	
+-			input_mt_slot(input,i);
+-			input_mt_report_slot_state(input, MT_TOOL_FINGER, false);			
+-		    }
+-	    }
+-    //}
+-	ts_release = ts_press;    
+-	input_sync(ftdev->input_dev);		
++		//* Modify by Hayden.Hu -- end
++
+     return 0;
+ }
+ #else
+@@ -1409,7 +1394,7 @@
+         return -EFAULT;
+ 
+     for ( i = 0; i < data->lastValidCnt; i++ ) {        
+-        input_report_key( ftdev->input_dev, BTN_TOUCH, 0);
++	input_report_key( ftdev->input_dev, BTN_TOUCH, 0);
+         input_report_abs( ftdev->input_dev, ABS_MT_TOUCH_MAJOR, 0);
+         input_report_abs( ftdev->input_dev, ABS_MT_WIDTH_MAJOR, 0);
+         input_report_abs( ftdev->input_dev, ABS_MT_PRESSURE, 0);
+@@ -1473,6 +1458,7 @@
+     return err;
+ }
+ 
++// 处理工作队列
+ static void ft5x06_work(struct work_struct *work)
+ {
+     struct ft5x06_device *ftdevice = container_of(work, struct ft5x06_device, work);
+@@ -1484,11 +1470,9 @@
+     #ifdef PROTOCOL_B
+          ft5x06_report_b(ftdevice);
+     #else
+- 	if ( !ret ){
+-
+-         ft5x06_report(ftdevice);
+-
+-    }
++			 		if ( !ret ){
++			         ft5x06_report(ftdevice);
++			    }
+     #endif
+ 	
+ }
+@@ -1663,16 +1647,16 @@
+ 	}
+ 
+ 	
+-	printk("gpio num:%d, reset level:%d, i2c_addr:%02x, irq_number:%d,x_pixel:%d, y_pixel:%d, max_point:%d, rotate:%d, i2cNum:%d\n",
+-		gpio_reset,
+-		0,
+-		cfg_dts.i2cAddr,
+-		cfg_dts.sirq,
+-		cfg_dts.xMax,
+-		cfg_dts.yMax,
+-		5,
+-		cfg_dts.rotate,
+-		cfg_dts.i2cNum);
++	//printk("gpio num:%d, reset level:%d, i2c_addr:%02x, irq_number:%d,x_pixel:%d, y_pixel:%d, max_point:%d, rotate:%d, i2cNum:%d\n",
++	//	gpio_reset,
++	//	0,
++	//	cfg_dts.i2cAddr,
++	//	cfg_dts.sirq,
++	//	cfg_dts.xMax,
++	//	cfg_dts.yMax,
++	//	5,
++	//	cfg_dts.rotate,
++	//	cfg_dts.i2cNum);
+     
+         return 0;
+ 
+@@ -1791,7 +1775,7 @@
+     struct ft5x06_data *ftdata = NULL;
+     struct ft5x06_config *ftconfig = NULL;
+     struct workqueue_struct *wq = NULL;
+-    int err = 0;
++    int err = 0,val;
+ #ifdef HAS_VIRTUAL_KEY
+     struct input_dev *key_input = NULL;
+ #endif
+@@ -1862,6 +1846,15 @@
+     ftdev->irq =cfg_dts.sirq;
+ 
+ 	#ifdef GPIO_TO_IRQ
++	val = act_readl(MFP_CTL1);
++        val=(val| (1<<22));    // bit 22 for B19,B18,B17,B16,B15,B14,B13,B12,B11,B10 - 10 Pins as GPIO
++        val=(val| (1<<6));    // bit 6 for B20
++        val=(val| (1<<5));    // bit 5 for B21
++        act_writel(val,MFP_CTL1);
++
++         val = act_readl(MFP_CTL2);
++        val=(val| (1<<28));    // bit 28 for B22,B23,B24,B25,B26,B27,B28,B29 - 8 pins as GPIO
++        act_writel(val,MFP_CTL2);
+     ftdev->irq = gpio_to_irq(FT5X06_IRQ_GPIO);
+ 	#endif
+ #else
+@@ -1896,45 +1889,29 @@
+     ///////////////
+  
+     __set_bit(INPUT_PROP_DIRECT,input->propbit);
+-	input_mt_init_slots(input, FT5X06_MAX_POINT, 0);
+-//	input_set_abs_params(input_dev,ABS_MT_POSITION_X,  0, SCREEN_MAX_X, 0, 0);
+-//	input_set_abs_params(input_dev,ABS_MT_POSITION_Y,  0, SCREEN_MAX_Y, 0, 0);
+-//	input_set_abs_params(input_dev,ABS_MT_TOUCH_MAJOR, 0, PRESS_MAX, 0, 0);
+-//	input_set_abs_params(input_dev,ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
++
+     ///////////////
+     set_bit(EV_ABS, input->evbit);
+-//    set_bit(ABS_MT_POSITION_X, input->absbit);
+-//    set_bit(ABS_MT_POSITION_Y, input->absbit);
+-    set_bit(ABS_MT_WIDTH_MAJOR, input->absbit);
+-    set_bit(ABS_MT_TRACKING_ID, input->absbit);
++//* Modify by Hayden.Hu -- begin
++	set_bit(EV_KEY, input->evbit);
++	set_bit(BTN_TOUCH, input->keybit);
++	input_set_abs_params(input, ABS_X, 0, 1024, 0, 0);
++	input_set_abs_params(input, ABS_Y, 0, 600, 0, 0);
++	input_set_abs_params(input, ABS_PRESSURE, 0, 1, 0, 0);
++#if CFG_FT_USE_CONFIG
++	input_set_abs_params(input, ABS_Y, 0, ftdev->ftconfig->max.y, 0, 0);
++	input_set_abs_params(input, ABS_X, 0, ftdev->ftconfig->max.x, 0, 0);
++#endif
++//* Modify by Hayden.Hu -- end
++
+ 
+     printk("ft5x06 probe v2.0 i file,FT5X0X_DOWNLOAD_FIRM=(%d)\n", FT5X0X_DOWNLOAD_FIRM);
++#if 0
+ 	#if (FT5X0X_DOWNLOAD_FIRM==1)
+ printk("download !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+ 	fts_ctpm_auto_upg(client);
+ 	#endif
+-//    set_bit(BTN_TOUCH, input->keybit);
+-///    input_set_abs_params(input, ABS_MT_POSITION_X, 0, ftdev->ftconfig->max.x, 0, 0);
+-//    input_set_abs_params(input, ABS_MT_POSITION_Y, 0, ftdev->ftconfig->max.y, 0, 0);
+-#if CFG_FT_USE_CONFIG
+-    if(cfg_dts.rotate == 90 || cfg_dts.rotate == 270)
+-    {
+-        input_set_abs_params(input, ABS_MT_POSITION_Y, 0, ftdev->ftconfig->max.x, 0, 0);
+-        input_set_abs_params(input, ABS_MT_POSITION_X, 0, ftdev->ftconfig->max.y, 0, 0);
+-    }
+-    else{
+-        input_set_abs_params(input, ABS_MT_POSITION_Y, 0, ftdev->ftconfig->max.y, 0, 0);
+-        input_set_abs_params(input, ABS_MT_POSITION_X, 0, ftdev->ftconfig->max.x, 0, 0);
+-    }    
+-#else
+-
+-    input_set_abs_params(input, ABS_MT_POSITION_Y, 0, ftdev->ftconfig->max.y, 0, 0);
+-    input_set_abs_params(input, ABS_MT_POSITION_X, 0, ftdev->ftconfig->max.x, 0, 0);
+ #endif
+-//    input_set_abs_params(input, ABS_MT_PRESSURE, 0, ftdev->ftconfig->max.weight, 0, 0);
+-    input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, FT5X06_MAX_POINT, 0, 0);   
+-    input_set_abs_params(input, ABS_MT_WIDTH_MAJOR, 0, 100, 0, 0);
+-    input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 100, 0, 0);
+ 	
+     err = input_register_device(ftdev->input_dev);
+     if ( err ) {
+@@ -2011,7 +1988,7 @@
+     struct ft5x06_device *ftdev = i2c_get_clientdata(client);
+     
+     if ( ftdev ) {
+-        printk("%s,%d~~~~~~~~\n", __func__, __LINE__);
++        //printk("%s,%d~~~~~~~~\n", __func__, __LINE__);
+ #if CFG_FT_USE_CONFIG
+ 	    sysfs_remove_group(&ftdev->input_dev->dev.kobj, &tp_attr_group);
+ #endif
+@@ -2047,7 +2024,7 @@
+     if ( tp_regulator )
+     {
+         current_val = regulator_get_voltage(tp_regulator);
+-        printk("current_val is %d \n",current_val);    
++        //printk("current_val is %d \n",current_val);    
+         //disable_power(tp_regulator);
+         regulator_deinit(tp_regulator);
+     }
+diff -Naur orig_FT5406/ft5x06.h FT5406/ft5x06.h
+--- orig_FT5406/ft5x06.h	2016-11-29 12:06:48.643149193 +0530
++++ FT5406/ft5x06.h	2017-05-19 16:16:49.865721586 +0530
+@@ -1,7 +1,7 @@
+ #ifndef FT5X06_H
+ #define FT5X06_H
+ #include "ft5x06_reg.h"
+-
++#define GPIO_TO_IRQ 1   //added by sudeep
+ #define CFG_FT_USE_CONFIG  1
+ 
+ #define FT5X06_X_MAX            ( 1280 )
+@@ -30,7 +30,9 @@
+ #define FT5X06_POWER_MIN_VOL	(3100000)
+ #define FT5X06_POWER_MAX_VOL	(3110000)
+ 
+-#define FT5X06_RESET_PIN        OWL_GPIO_PORTB(3)
++#define FT5X06_RESET_PIN        OWL_GPIO_PORTB(26) // B(3)
++#define FT5X06_LED_PIN        OWL_GPIO_PORTD(18) 
++
+ #define I2C_CTPM_ADDRESS 0x38
+ //#define FT5X0X_DOWNLOAD_FIRM    (R_TP_DOWNLOAD_FIRM)
+ //#define FIRM_I_FILE_NAME	(R_TP_I_FILE_NAME)
+@@ -107,7 +109,8 @@
+ 
+ //#define GPIO_TO_IRQ
+ #ifdef GPIO_TO_IRQ
+-#define FT5X06_IRQ_GPIO        OWL_GPIO_PORTA(24)
++//#define FT5X06_IRQ_GPIO        OWL_GPIO_PORTA(24)
++#define FT5X06_IRQ_GPIO        OWL_GPIO_PORTB(24) // for sparky
+ #define FT5x06_IRQ_NAME        "ft5x06_irq"
+ #endif
+diff -Naur orig_FT5406/Makefile FT5406/Makefile
+--- orig_FT5406/Makefile	2016-11-29 12:06:48.643149193 +0530
++++ FT5406/Makefile	2017-02-17 11:30:51.811300314 +0530
+@@ -6,7 +6,7 @@
+ R_TP_MAX_POINT=5
+ R_TP_DOWNLOAD_FIRM=0
+ R_TP_UPGRADE_ID2=0x3
+-R_TP_I_FILE_NAME="NOVO7_FT5406_COF_20141029_app.i"
++R_TP_I_FILE_NAME="ft_YCF0639-A-10.18-app.i"
+ 
+  ifeq ($(R_TP_MAX_POINT),)
+  R_TP_MAX_POINT = 5

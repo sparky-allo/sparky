@@ -1131,6 +1131,7 @@ u64 snd_usb_interface_dsd_format_quirks(struct snd_usb_audio *chip,
 	case USB_ID(0x20b1, 0x3073): /* Soekris dac1101 */
 	case USB_ID(0x20b1, 0x300f): /* Engineered Electronics Stereo Playback Interface */
 	case USB_ID(0x20b1, 0x3066): /*Topping D30 (XMOS) */
+	case USB_ID(0x152a, 0x8750): /*Topping D50 */
 		if (fp->altsetting == 3)
 			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
 		break;
@@ -1157,7 +1158,11 @@ u64 snd_usb_interface_dsd_format_quirks(struct snd_usb_audio *chip,
 		if (fp->altsetting == 2)
 			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
 		break;
-
+	/*only for testing below added , to be reverted if not working */
+	case USB_ID(0x2ab6, 0x0001):
+                if (fp->altsetting == 1)
+                        return SNDRV_PCM_FMTBIT_DSD_U32_BE;
+                break;
 	default:
 		break;
 	}
