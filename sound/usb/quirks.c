@@ -968,6 +968,12 @@ void snd_usb_endpoint_start_quirk(struct snd_usb_endpoint *ep)
 	     ep->chip->usb_id == USB_ID(0x0763, 0x2031)) &&
 	    ep->type == SND_USB_ENDPOINT_TYPE_DATA)
 		ep->skip_packets = 16;
+	/* Work around devices that report unreasonable feedback data */
+        if ((ep->chip->usb_id == USB_ID(0x0644, 0x8038) ||  /* TEAC UD-H01 */
+             ep->chip->usb_id == USB_ID(0x1852, 0x5034)) && /* T+A Dac8 */
+            ep->syncmaxsize == 4)
+                ep->tenor_fb_quirk = 1;
+
 }
 
 //added for dragonfly
@@ -1131,6 +1137,7 @@ u64 snd_usb_interface_dsd_format_quirks(struct snd_usb_audio *chip,
 	case USB_ID(0x20b1, 0x3073): /* Soekris dac1101 */
 	case USB_ID(0x20b1, 0x300f): /* Engineered Electronics Stereo Playback Interface */
 	case USB_ID(0x20b1, 0x3066): /*Topping D30 (XMOS) */
+	case USB_ID(0x20b1, 0x3078): /* (XMOS) */
 	case USB_ID(0x152a, 0x8750): /*Topping D50 */
 		if (fp->altsetting == 3)
 			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
@@ -1158,14 +1165,10 @@ u64 snd_usb_interface_dsd_format_quirks(struct snd_usb_audio *chip,
 		if (fp->altsetting == 2)
 			return SNDRV_PCM_FMTBIT_DSD_U32_BE;
 		break;
-	/*only for testing below added , to be reverted if not working */
-	case USB_ID(0x2ab6, 0x0001):
-                if (fp->altsetting == 1)
-                        return SNDRV_PCM_FMTBIT_DSD_U32_BE;
-                break;
 	default:
 		break;
 	}
+
 	 /* Denon/Marantz devices with USB DAC functionality */
         if (is_marantz_denon_dac(chip->usb_id)) {
                 if (fp->altsetting == 2)

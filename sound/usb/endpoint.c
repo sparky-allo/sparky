@@ -1089,8 +1089,19 @@ void snd_usb_handle_sync_urb(struct snd_usb_endpoint *ep,
 
 	if (f == 0)
 		return;
+	 if (unlikely(sender->tenor_fb_quirk)) {
+                /*
+		* Devices based on Tenor 8802 chipsets (TEAC UD-H01
+ 	        * and others) sometimes change the feedback value
+        	* by +/- 0x1.0000.
+                                                                      */
+                if (f < ep->freqn - 0x8000)
+                        f += 0xf000;
+                else if (f > ep->freqn + 0x8000)
+                        f -= 0xf000;
 
-	if (unlikely(ep->freqshift == INT_MIN)) {
+
+	} else if (unlikely(ep->freqshift == INT_MIN)) {
 		/*
 		 * The first time we see a feedback value, determine its format
 		 * by shifting it left or right until it matches the nominal

@@ -1336,7 +1336,12 @@ int snd_usb_mixer_apply_create_quirk(struct usb_mixer_interface *mixer)
 			snd_info_set_text_ops(entry, mixer,
 					      snd_audigy2nx_proc_read);
 		break;
-
+	/* EMU0204 */
+        case USB_ID(0x041e, 0x3f19):
+                err = snd_emu0204_controls_create(mixer);
+                if (err < 0)
+                        break;
+                break;
 	case USB_ID(0x0763, 0x2030): /* M-Audio Fast Track C400 */
 	case USB_ID(0x0763, 0x2031): /* M-Audio Fast Track C400 */
 		err = snd_c400_create_mixer(mixer);
@@ -1352,6 +1357,13 @@ int snd_usb_mixer_apply_create_quirk(struct usb_mixer_interface *mixer)
 	case USB_ID(0x0b05, 0x17a0): /* ASUS Xonar U3 */
 		err = snd_xonar_u1_controls_create(mixer);
 		break;
+	case USB_ID(0x0d8c, 0x0103): /* Audio Advantage Micro II */
+                err = snd_microii_controls_create(mixer);
+                break;
+
+        case USB_ID(0x0dba, 0x1000): /* Digidesign Mbox 1 */
+                err = snd_mbox1_create_sync_switch(mixer);
+                break;
 
 	case USB_ID(0x17cc, 0x1011): /* Traktor Audio 6 */
 		err = snd_nativeinstruments_create_mixer(mixer,
@@ -1369,6 +1381,14 @@ int snd_usb_mixer_apply_create_quirk(struct usb_mixer_interface *mixer)
 		/* detection is disabled in mixer_maps.c */
 		err = snd_create_std_mono_table(mixer, ebox44_table);
 		break;
+	case USB_ID(0x1235, 0x8012): /* Focusrite Scarlett 6i6 */
+        case USB_ID(0x1235, 0x8002): /* Focusrite Scarlett 8i6 */
+        case USB_ID(0x1235, 0x8004): /* Focusrite Scarlett 18i6 */
+        case USB_ID(0x1235, 0x8014): /* Focusrite Scarlett 18i8 */
+        case USB_ID(0x1235, 0x800c): /* Focusrite Scarlett 18i20 */
+                err = snd_scarlett_controls_create(mixer);
+                break;
+
 	}
 
 	return err;
@@ -1443,10 +1463,10 @@ static void snd_dragonfly_quirk_db_scale(struct usb_mixer_interface *mixer,
 		}
 	} 
 	 
-	void snd_usb_mixer_fu_apply_quirk(struct usb_mixer_interface *mixer, 
+void snd_usb_mixer_fu_apply_quirk(struct usb_mixer_interface *mixer, 
 					  struct usb_mixer_elem_info *cval, int unitid, 
 					  struct snd_kcontrol *kctl) 
-	{ 
+{ 
 		switch (mixer->chip->usb_id) { 
 		case USB_ID(0x21b4, 0x0081): /* AudioQuest DragonFly */ 
 	//		if (unitid == 7 && cval->min == 0 && cval->max == 50) 
@@ -1454,5 +1474,13 @@ static void snd_dragonfly_quirk_db_scale(struct usb_mixer_interface *mixer,
 			if (unitid == 7 && cval->control == UAC_FU_VOLUME) 
 				snd_dragonfly_quirk_db_scale(mixer, cval, kctl);
 			break; 
-		} 
+		 /* lowest playback value is muted on C-Media devices */
+	        case USB_ID(0x0d8c, 0x000c):
+        	case USB_ID(0x0d8c, 0x0014):
+                	if (strstr(kctl->id.name, "Playback"))
+                        cval->min_mute = 1;
+               		 break;
 	}
+}
+ 
+
